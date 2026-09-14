@@ -1,0 +1,7 @@
+export { CatalogPage } from '@/modules/catalog/components/CatalogPage'
+export { CatalogSearch } from '@/modules/catalog/components/CatalogSearch'
+export { EnvironmentToggle } from '@/modules/catalog/components/EnvironmentToggle'
+export { ManageAppsPage } from '@/modules/catalog/components/ManageAppsPage'
+export { useCatalog } from '@/modules/catalog/hooks/useCatalog'
+export { mergeCatalogApps } from '@/modules/catalog/services/catalogService'
+export type { CatalogApp, ResolvedCatalogApp } from '@/modules/catalog/types'

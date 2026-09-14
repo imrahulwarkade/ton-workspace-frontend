@@ -1,36 +1,137 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ToneOp Workspace
+
+Staff workspace for ToneOp. Sign in once, then arrange dashboards, CRMs, landing pages, and tools on a Grafana-style canvas — with a Staging / Production toggle instead of browser bookmarks.
+
+This is Phase 1: frontend only. Auth is a mock BFF. Catalog URLs and dashboard layouts persist in the browser. Google Workspace SSO and a real API come later.
+
+## Tech Stack
+
+| Concern                   | Choice                                  |
+| ------------------------- | --------------------------------------- |
+| Framework                 | Next.js 16 (App Router)                 |
+| Language                  | TypeScript (strict)                     |
+| Styling                   | Tailwind CSS 4                          |
+| UI primitives             | shadcn-style Radix components           |
+| Grid                      | react-grid-layout                       |
+| Forms                     | React Hook Form + Zod                   |
+| Client state              | Zustand                                 |
+| Server/async client state | TanStack Query                          |
+| HTTP                      | Axios (`src/lib/api/client.ts`)         |
+| Icons                     | Lucide React                            |
+| Lint / format             | ESLint + Prettier + Husky / lint-staged |
+| Package manager           | npm                                     |
+
+## Architecture Overview
+
+Routes stay thin. Business logic lives in `src/modules/*`. Each domain owns its components, hooks, services, schemas, and types, and only exposes a public `index.ts`.
+
+```
+src/
+  app/                 # routing, layouts, BFF route handlers
+  modules/
+    auth/              # sign-in, session, user menu
+    catalog/           # app URLs, admin add/edit/remove
+    dashboard/         # canvases, drag / resize / panels
+    favorites/         # starred apps
+  components/          # shared layout + ui primitives
+  lib/api/             # shared axios instance
+  lib/auth/            # cookies / session helpers
+```
+
+`app/` imports from `modules/*`. Modules never import another module's internals — only public exports, or shared code in `lib/` / `components/`.
+
+## Prerequisites
+
+- Node.js 20 or newer (repo developed on Node 24)
+- npm 10+
+- No backend or database required for Phase 1
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+cd toneop-hub
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). You will be redirected to `/login`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Demo sign-in (frontend mock):
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Any `@toneopfit.com`, `@toneop.com`, or `@appofit.com` email
+- Password at least 8 characters
+- Email local part containing `admin` or `crm` sets that role
+- **Continue with Google** signs in as `rahul@toneopfit.com` (engineer)
+- Admins see **Manage URLs** and can add staging/production links
+- After login, use **Edit** on the home canvas to drag, resize, add, or remove panels
 
-## Learn More
+CRM agents do not see infra / design apps (Grafana, Vercel, Figma, …).
 
-To learn more about Next.js, take a look at the following resources:
+## Environment Variables
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Key                        | Required | Example                     | Description                                                   |
+| -------------------------- | -------- | --------------------------- | ------------------------------------------------------------- |
+| `NEXT_PUBLIC_API_BASE_URL` | yes      | `/api`                      | Axios base URL. Same-origin BFF until a Workspace API exists. |
+| `NEXT_PUBLIC_ASSETS_URL`   | no       | `https://assets.toneop.net` | Public asset host.                                            |
+| `NEXT_PUBLIC_APP_NAME`     | no       | `ToneOp Workspace`          | Product name in the header and document title.                |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Never commit `.env.local`. `.env.example` is safe to commit.
 
-## Deploy on Vercel
+## Available Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Script              | What it does               |
+| ------------------- | -------------------------- |
+| `npm run dev`       | Next.js dev server         |
+| `npm run build`     | Production build           |
+| `npm run start`     | Serve the production build |
+| `npm run lint`      | ESLint                     |
+| `npm run format`    | Prettier write             |
+| `npm run typecheck` | `tsc --noEmit`             |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Folder Structure
+
+```
+src/
+  app/
+    (auth)/login/                 # sign-in page
+    (workspace)/                  # home canvas
+    (workspace)/dashboards/       # dashboard list + editor
+    (workspace)/apps/             # app library
+    (workspace)/admin/apps/       # admin URL manager
+    api/auth/                     # mock BFF
+  modules/
+    auth/
+    catalog/
+    dashboard/
+    favorites/
+  components/ui/
+  components/layout/
+  lib/api/
+  lib/auth/
+  proxy.ts                        # cookie session gate (Next.js 16)
+```
+
+## Coding Conventions
+
+- **Module boundary:** import other domains only through `index.ts`. Promote shared logic to `lib/` or `components/`.
+- **State:** derive values when possible. Zustand for environment, catalog URLs, and dashboard layouts. React Query for session.
+- **API:** modules call `fetchWithErrorHandling`. Components never import `axiosInstance`.
+- **Forms:** React Hook Form + `zodResolver`. Schema is the source of truth (`z.infer`).
+- **Auth token:** cookies only (`access_token`, `workspace_user`), never `localStorage`.
+- Commits: `feat|fix|chore|refactor: description`.
+
+## Deployment
+
+Target: Vercel.
+
+- Build command: `npm run build`
+- Output: Next.js default
+- Set the env vars above. For a deployed preview, point `NEXT_PUBLIC_API_BASE_URL` at that deployment's `/api` origin.
+- Workspace is internal: pages send `robots: noindex`.
+
+## Contributing
+
+- Branch: `feat/workspace-...`, `fix/workspace-...`
+- Before a PR: `npm run lint`, `npm run typecheck`, `npm run build`
+- Keep components under 250 lines; split on responsibility, not line count
