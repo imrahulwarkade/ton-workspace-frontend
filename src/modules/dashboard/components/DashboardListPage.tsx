@@ -1,36 +1,30 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Plus, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useHydrated } from '@/hooks/useHydrated'
 import { useCurrentUser } from '@/modules/auth'
-import { useCatalog } from '@/modules/catalog/hooks/useCatalog'
-import { CreateDashboardDialog } from '@/modules/dashboard/components/CreateDashboardDialog'
-import { useDashboardStore } from '@/modules/dashboard/store'
 import { CatalogSkeleton } from '@/modules/catalog/components/CatalogSkeleton'
+import { CreateDashboardDialog } from '@/modules/dashboard/components/CreateDashboardDialog'
+import {
+  useCreateDashboard,
+  useDashboards,
+  useToggleDashboardStar,
+} from '@/modules/dashboard/hooks/useDashboards'
 
 export function DashboardListPage() {
-  const hydrated = useHydrated()
   const router = useRouter()
   const { user } = useCurrentUser()
-  const { roleApps } = useCatalog()
-  const dashboards = useDashboardStore((state) => state.dashboards)
-  const ensureDefault = useDashboardStore((state) => state.ensureDefault)
-  const createDashboard = useDashboardStore((state) => state.createDashboard)
-  const toggleStar = useDashboardStore((state) => state.toggleStar)
+  const { dashboards, isLoading } = useDashboards()
+  const createDashboard = useCreateDashboard()
+  const toggleStar = useToggleDashboardStar()
   const [query, setQuery] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
 
-  useEffect(() => {
-    if (!hydrated || !user) return
-    ensureDefault(roleApps.map((app) => ({ id: app.id, name: app.name })))
-  }, [hydrated, user, roleApps, ensureDefault])
-
-  if (!hydrated) return <CatalogSkeleton />
+  if (!user || isLoading) return <CatalogSkeleton />
 
   const filtered = dashboards.filter((dashboard) =>
     dashboard.name.toLowerCase().includes(query.toLowerCase())
@@ -79,7 +73,7 @@ export function DashboardListPage() {
                     <button
                       type="button"
                       aria-label={`Star ${dashboard.name}`}
-                      onClick={() => toggleStar(dashboard.id)}
+                      onClick={() => toggleStar.mutate(dashboard.id)}
                       className="text-muted-foreground"
                     >
                       <Star
@@ -114,8 +108,11 @@ export function DashboardListPage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onCreate={({ name, description }) => {
-          const id = createDashboard(name, description)
-          router.push(`/dashboards/${id}`)
+          void createDashboard
+            .mutateAsync({ name, description })
+            .then((dashboard) => {
+              router.push(`/dashboards/${dashboard.id}`)
+            })
         }}
       />
     </div>

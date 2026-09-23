@@ -1,14 +1,14 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { BRAND_LABELS, BRANDS } from '@/lib/constants/brands'
 import { canRoleSeeAppType } from '@/lib/constants/roles'
 import { useCurrentUser } from '@/modules/auth'
-import { useCatalogAppsStore } from '@/modules/catalog/appsStore'
-import { mergeCatalogApps } from '@/modules/catalog/services/catalogService'
+import { listCatalogApps } from '@/modules/catalog/services/catalogApi'
 import { useCatalogStore } from '@/modules/catalog/store'
 import type { CatalogGroup, ResolvedCatalogApp } from '@/modules/catalog/types'
-import { useFavoritesStore } from '@/modules/favorites'
+import { useFavoriteIds } from '@/modules/favorites/hooks/useFavorites'
 
 function matchesSearch(
   app: { name: string; description: string },
@@ -19,20 +19,23 @@ function matchesSearch(
   return haystack.includes(query.toLowerCase())
 }
 
+export const catalogKeys = {
+  apps: ['catalog', 'apps'] as const,
+}
+
 export function useCatalog() {
   const { user } = useCurrentUser()
   const environment = useCatalogStore((state) => state.environment)
   const search = useCatalogStore((state) => state.search)
   const typeFilter = useCatalogStore((state) => state.typeFilter)
-  const favoriteIds = useFavoritesStore((state) => state.favoriteIds)
-  const customApps = useCatalogAppsStore((state) => state.customApps)
-  const overrides = useCatalogAppsStore((state) => state.overrides)
-  const hiddenIds = useCatalogAppsStore((state) => state.hiddenIds)
+  const { favoriteIds } = useFavoriteIds()
+  const appsQuery = useQuery({
+    queryKey: catalogKeys.apps,
+    queryFn: listCatalogApps,
+    enabled: Boolean(user),
+  })
 
-  const allApps = useMemo(
-    () => mergeCatalogApps(customApps, overrides, hiddenIds),
-    [customApps, overrides, hiddenIds]
-  )
+  const allApps = useMemo(() => appsQuery.data ?? [], [appsQuery.data])
 
   const visibleApps = useMemo(() => {
     if (!user) return []
@@ -76,6 +79,7 @@ export function useCatalog() {
     visibleApps,
     favorites,
     groups,
-    isEmpty: visibleApps.length === 0,
+    isEmpty: !appsQuery.isLoading && visibleApps.length === 0,
+    isLoading: appsQuery.isLoading || appsQuery.isPending,
   }
 }

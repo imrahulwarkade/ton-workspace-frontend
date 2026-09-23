@@ -7,7 +7,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 Staff workspace for ToneOp. Sign in once, then arrange dashboards, CRMs, landing pages, and tools on a Grafana-style canvas — with a Staging / Production toggle instead of browser bookmarks.
 
-This is Phase 1: frontend only. Auth is a mock BFF. Catalog URLs and dashboard layouts persist in the browser. Google Workspace SSO and a real API come later.
+This is Phase 1: the Next.js app talks to the Django Workspace API for auth, catalog URLs, favorites, and dashboards. Staging / Production is still a client toggle. Google Workspace SSO comes later (the Google button is a development stub).
 
 ## Tech Stack
 
@@ -49,7 +49,7 @@ src/
 
 - Node.js 20 or newer (repo developed on Node 24)
 - npm 10+
-- No backend or database required for Phase 1
+- ToneOp Workspace API running on port 8000 (see `backend_space/toneop-workspace-backend`)
 
 ## Getting Started
 
@@ -62,12 +62,13 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). You will be redirected to `/login`.
 
-Demo sign-in (frontend mock):
+Demo sign-in (Django API, seeded by `python manage.py seed_workspace`):
 
-- Any `@toneopfit.com`, `@toneop.com`, or `@appofit.com` email
-- Password at least 8 characters
-- Email local part containing `admin` or `crm` sets that role
-- **Continue with Google** signs in as `rahul@toneopfit.com` (engineer)
+- `admin@toneopfit.com` / `workspace1234` — admin
+- `rahul@toneopfit.com` / `workspace1234` — engineer
+- `crm@toneopfit.com` / `workspace1234` — CRM agent
+- Any other `@toneopfit.com`, `@toneop.com`, or `@appofit.com` email is auto-provisioned on first login
+- **Continue with Google** signs in as `rahul@toneopfit.com` (engineer) while the API is in DEBUG
 - Admins see **Manage URLs** and can add staging/production links
 - After login, use **Edit** on the home canvas to drag, resize, add, or remove panels
 
@@ -75,11 +76,11 @@ CRM agents do not see infra / design apps (Grafana, Vercel, Figma, …).
 
 ## Environment Variables
 
-| Key                        | Required | Example                     | Description                                                   |
-| -------------------------- | -------- | --------------------------- | ------------------------------------------------------------- |
-| `NEXT_PUBLIC_API_BASE_URL` | yes      | `/api`                      | Axios base URL. Same-origin BFF until a Workspace API exists. |
-| `NEXT_PUBLIC_ASSETS_URL`   | no       | `https://assets.toneop.net` | Public asset host.                                            |
-| `NEXT_PUBLIC_APP_NAME`     | no       | `ToneOp Workspace`          | Product name in the header and document title.                |
+| Key                        | Required | Example                     | Description                                    |
+| -------------------------- | -------- | --------------------------- | ---------------------------------------------- |
+| `NEXT_PUBLIC_API_BASE_URL` | yes      | `http://localhost:8000/api` | Django Workspace API.                          |
+| `NEXT_PUBLIC_ASSETS_URL`   | no       | `https://assets.toneop.net` | Public asset host.                             |
+| `NEXT_PUBLIC_APP_NAME`     | no       | `ToneOp Workspace`          | Product name in the header and document title. |
 
 Never commit `.env.local`. `.env.example` is safe to commit.
 
@@ -132,7 +133,7 @@ Target: Vercel.
 
 - Build command: `npm run build`
 - Output: Next.js default
-- Set the env vars above. For a deployed preview, point `NEXT_PUBLIC_API_BASE_URL` at that deployment's `/api` origin.
+- Set the env vars above. Point `NEXT_PUBLIC_API_BASE_URL` at the Workspace API origin (for example `https://workspace-api.toneop.net/api`).
 - Workspace is internal: pages send `robots: noindex`.
 
 ## Contributing

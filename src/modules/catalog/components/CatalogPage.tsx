@@ -1,6 +1,5 @@
 'use client'
 
-import { useHydrated } from '@/hooks/useHydrated'
 import { AppGrid } from '@/modules/catalog/components/AppGrid'
 import { CatalogEmptyState } from '@/modules/catalog/components/CatalogEmptyState'
 import { CatalogSkeleton } from '@/modules/catalog/components/CatalogSkeleton'
@@ -8,10 +7,9 @@ import { TypeFilter } from '@/modules/catalog/components/TypeFilter'
 import { useCatalog } from '@/modules/catalog/hooks/useCatalog'
 
 export function CatalogPage() {
-  const hydrated = useHydrated()
-  const { groups, favorites, isEmpty } = useCatalog()
+  const { groups, favorites, isEmpty, isLoading } = useCatalog()
 
-  if (!hydrated) {
+  if (isLoading) {
     return <CatalogSkeleton />
   }
 

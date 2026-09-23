@@ -7,7 +7,7 @@ import { APP_TYPE_LABELS } from '@/lib/constants/appTypes'
 import { cn } from '@/lib/utils/cn'
 import { CATALOG_ICONS } from '@/modules/catalog/components/catalogIcons'
 import type { ResolvedCatalogApp } from '@/modules/catalog/types'
-import { useFavoritesStore } from '@/modules/favorites'
+import { useToggleFavorite } from '@/modules/favorites/hooks/useFavorites'
 
 type AppTileProps = {
   app: ResolvedCatalogApp
@@ -15,7 +15,7 @@ type AppTileProps = {
 
 export function AppTile({ app }: AppTileProps) {
   const Icon = CATALOG_ICONS[app.icon]
-  const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite)
+  const toggleFavorite = useToggleFavorite()
   const { copied, copy } = useCopyToClipboard()
 
   return (
@@ -49,7 +49,7 @@ export function AppTile({ app }: AppTileProps) {
           aria-label={
             app.isFavorite ? 'Remove from favorites' : 'Add to favorites'
           }
-          onClick={() => toggleFavorite(app.id)}
+          onClick={() => toggleFavorite.mutate(app.id)}
         >
           <Star
             className={cn(
