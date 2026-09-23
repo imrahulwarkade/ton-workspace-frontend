@@ -1,11 +1,14 @@
 export const ACCENT_CLASSES = [
   'bg-emerald-600',
+  'bg-emerald-500',
   'bg-sky-600',
   'bg-orange-500',
+  'bg-orange-600',
   'bg-lime-600',
   'bg-teal-600',
   'bg-rose-500',
   'bg-amber-500',
+  'bg-amber-600',
   'bg-violet-600',
   'bg-green-600',
   'bg-red-500',
@@ -14,6 +17,7 @@ export const ACCENT_CLASSES = [
   'bg-yellow-500',
   'bg-blue-600',
   'bg-zinc-800',
+  'bg-neutral-800',
 ] as const
 
 export type AccentClass = (typeof ACCENT_CLASSES)[number]

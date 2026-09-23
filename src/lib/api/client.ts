@@ -23,7 +23,9 @@ axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const accessToken = getCookie(ACCESS_TOKEN_COOKIE)
     if (accessToken) {
-      config.headers.Authorization = accessToken
+      config.headers.Authorization = accessToken.startsWith('Bearer ')
+        ? accessToken
+        : `Bearer ${accessToken}`
     }
     return config
   },

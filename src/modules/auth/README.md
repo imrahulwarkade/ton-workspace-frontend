@@ -2,4 +2,4 @@
 
 Staff sign-in for ToneOp Workspace.
 
-Phase 1 is frontend-only: the login form posts to Next.js BFF routes that set mock cookies. Google Workspace OIDC replaces the mock in a later phase.
+Phase 1 posts to the Django Workspace API (`/api/auth/login`, `/api/auth/session`). The client stores `access_token` and `workspace_user` cookies from the JSON response. Google Workspace OIDC replaces the development Google stub later.

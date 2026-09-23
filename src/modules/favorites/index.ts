@@ -1,1 +1,4 @@
-export { useFavoritesStore } from '@/modules/favorites/store'
+export {
+  useFavoriteIds,
+  useToggleFavorite,
+} from '@/modules/favorites/hooks/useFavorites'

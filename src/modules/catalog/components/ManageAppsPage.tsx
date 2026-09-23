@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -14,33 +15,59 @@ import { APP_TYPE_LABELS } from '@/lib/constants/appTypes'
 import { BRAND_LABELS } from '@/lib/constants/brands'
 import { accentTile } from '@/lib/constants/accents'
 import { cn } from '@/lib/utils/cn'
-import { useCatalogAppsStore } from '@/modules/catalog/appsStore'
 import { AppForm } from '@/modules/catalog/components/AppForm'
 import { CATALOG_ICONS } from '@/modules/catalog/components/catalogIcons'
-import { useCatalog } from '@/modules/catalog/hooks/useCatalog'
+import { catalogKeys, useCatalog } from '@/modules/catalog/hooks/useCatalog'
 import type { CatalogAppFormValues } from '@/modules/catalog/schemas/appSchema'
-import { slugifyAppId } from '@/modules/catalog/services/catalogService'
+import {
+  createCatalogApp,
+  deleteCatalogApp,
+  updateCatalogApp,
+} from '@/modules/catalog/services/catalogApi'
 import type { CatalogApp } from '@/modules/catalog/types'
 
 type EditorState =
   { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; app: CatalogApp }
 
 export function ManageAppsPage() {
-  const { allApps } = useCatalog()
-  const addApp = useCatalogAppsStore((state) => state.addApp)
-  const updateApp = useCatalogAppsStore((state) => state.updateApp)
-  const removeApp = useCatalogAppsStore((state) => state.removeApp)
+  const queryClient = useQueryClient()
+  const { allApps, isLoading } = useCatalog()
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' })
 
+  const createMutation = useMutation({
+    mutationFn: createCatalogApp,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: catalogKeys.apps })
+      setEditor({ mode: 'closed' })
+    },
+  })
+  const updateMutation = useMutation({
+    mutationFn: ({
+      id,
+      values,
+    }: {
+      id: string
+      values: CatalogAppFormValues
+    }) => updateCatalogApp(id, values),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: catalogKeys.apps })
+      setEditor({ mode: 'closed' })
+    },
+  })
+  const deleteMutation = useMutation({
+    mutationFn: deleteCatalogApp,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: catalogKeys.apps })
+    },
+  })
+
   function handleCreate(values: CatalogAppFormValues) {
-    addApp({ id: slugifyAppId(values.name), ...values, isCustom: true })
-    setEditor({ mode: 'closed' })
+    createMutation.mutate(values)
   }
 
   function handleEdit(values: CatalogAppFormValues) {
     if (editor.mode !== 'edit') return
-    updateApp(editor.app.id, values)
-    setEditor({ mode: 'closed' })
+    updateMutation.mutate({ id: editor.app.id, values })
   }
 
   return (
@@ -77,6 +104,13 @@ export function ManageAppsPage() {
             </tr>
           </thead>
           <tbody>
+            {isLoading ? (
+              <tr>
+                <td className="text-muted-foreground px-4 py-6" colSpan={5}>
+                  Loading URLs…
+                </td>
+              </tr>
+            ) : null}
             {allApps.map((app) => {
               const Icon = CATALOG_ICONS[app.icon]
               return (
@@ -122,7 +156,7 @@ export function ManageAppsPage() {
                         size="icon"
                         variant="ghost"
                         aria-label={`Remove ${app.name}`}
-                        onClick={() => removeApp(app.id)}
+                        onClick={() => deleteMutation.mutate(app.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
